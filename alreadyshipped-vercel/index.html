@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlreadyShipped — Compare All Carrier Rates Instantly</title>
+  <meta name="description" content="Compare real shipping rates from USPS, UPS, FedEx and DHL instantly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Syne', sans-serif; background: #0A0F1E; color: #fff; min-height: 100vh; }
+    .hero-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(ellipse at 20% 20%, rgba(0,210,255,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(255,100,50,0.06) 0%, transparent 60%); pointer-events: none; z-index: 0; }
+    .grid-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 60px 60px; pointer-events: none; z-index: 0; }
+    .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 0 20px; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 24px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .logo { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo span { color: #00D2FF; }
+    .badge { background: rgba(0,210,255,0.1); border: 1px solid rgba(0,210,255,0.2); color: #00D2FF; font-size: 11px; font-weight: 600; letter-spacing: 1px; padding: 4px 12px; border-radius: 100px; text-transform: uppercase; }
+    .hero { padding: 56px 0 36px; text-align: center; }
+    .hero h1 { font-size: clamp(32px, 6vw, 60px); font-weight: 800; line-height: 1.05; letter-spacing: -2px; margin-bottom: 14px; }
+    .hero h1 em { color: #00D2FF; font-style: normal; }
+    .hero p { color: rgba(255,255,255,0.45); font-size: 16px; max-width: 480px; margin: 0 auto 44px; line-height: 1.6; }
+    .form-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 32px; }
+    .sec-label { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin: 22px 0 12px; display: flex; align-items: center; gap: 8px; }
+    .sec-label:first-child { margin-top: 0; }
+    .sec-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; color: rgba(255,255,255,0.38); font-weight: 500; }
+    .field input, .field select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-family: 'DM Mono', monospace; transition: all 0.2s; outline: none; width: 100%; }
+    .field input:focus, .field select:focus { border-color: rgba(0,210,255,0.4); background: rgba(0,210,255,0.05); box-shadow: 0 0 0 3px rgba(0,210,255,0.08); }
+    .field select option { background: #1a1f35; }
+    .field input::placeholder { color: rgba(255,255,255,0.2); }
+    .field input[readonly] { opacity: 0.4; cursor: not-allowed; }
+    .pkg-toggle { display: flex; gap: 10px; margin-top: 6px; }
+    .pkg-btn { flex: 1; padding: 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.45); cursor: pointer; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .pkg-btn.active { background: rgba(0,210,255,0.1); border-color: rgba(0,210,255,0.4); color: #00D2FF; }
+    .cmp-btn { width: 100%; margin-top: 26px; padding: 17px; background: linear-gradient(135deg, #00D2FF, #0066FF); border: none; border-radius: 12px; color: #fff; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .cmp-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(0,210,255,0.3); }
+    .loading-screen { text-align: center; padding: 80px 0; }
+    .spinner { width: 44px; height: 44px; border: 3px solid rgba(0,210,255,0.1); border-top-color: #00D2FF; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-carriers { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+    .loading-carrier { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 7px 14px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.4); animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:0.4}50%{opacity:1} }
+    .error-box { background: rgba(255,50,50,0.1); border: 1px solid rgba(255,50,50,0.3); border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center; color: #ff6b6b; }
+    .res-hdr { display: flex; align-items: center; justify-content: space-between; padding: 36px 0 20px; flex-wrap: wrap; gap: 14px; }
+    .res-title h2 { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+    .res-title p { color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 3px; }
+    .back-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); padding: 9px 18px; border-radius: 10px; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+    .back-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .best-banner { background: linear-gradient(135deg, rgba(0,210,255,0.1), rgba(0,102,255,0.08)); border: 1px solid rgba(0,210,255,0.2); border-radius: 16px; padding: 20px 24px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .best-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #00D2FF; font-weight: 600; margin-bottom: 4px; }
+    .best-price { font-size: 30px; font-weight: 800; font-family: 'DM Mono', monospace; }
+    .book-btn { background: linear-gradient(135deg, #00D2FF, #0066FF); border: none; border-radius: 10px; color: #fff; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; padding: 11px 22px; cursor: pointer; transition: all 0.2s; }
+    .book-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,210,255,0.3); }
+    .sum-bar { display: flex; gap: 20px; flex-wrap: wrap; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 22px; margin-bottom: 22px; }
+    .sum-item { display: flex; flex-direction: column; gap: 2px; }
+    .sum-key { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); font-weight: 600; }
+    .sum-val { font-size: 13px; color: rgba(255,255,255,0.8); font-family: 'DM Mono', monospace; }
+    .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+    .f-btn { padding: 7px 14px; border-radius: 100px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.45); cursor: pointer; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+    .f-btn.active { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: #fff; }
+    .tog { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(255,255,255,0.45); cursor: pointer; }
+    .tog input { accent-color: #00D2FF; cursor: pointer; }
+    .rate-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 13px; padding: 18px 22px; margin-bottom: 8px; display: flex; align-items: center; gap: 18px; transition: all 0.2s; animation: slideIn 0.3s ease both; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+    .rate-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); transform: translateX(3px); }
+    .rate-card.best { border-color: rgba(0,210,255,0.25); background: rgba(0,210,255,0.04); }
+    .c-badge { width: 48px; height: 48px; border-radius: 11px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .c-info { flex: 1; min-width: 0; }
+    .c-name { font-weight: 700; font-size: 14px; }
+    .c-svc { color: rgba(255,255,255,0.38); font-size: 12px; margin-top: 2px; }
+    .del-badge { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 4px 11px; border-radius: 100px; font-size: 11px; color: rgba(255,255,255,0.45); white-space: nowrap; }
+    .r-price { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; white-space: nowrap; }
+    .sel-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.65); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+    .sel-btn:hover { background: rgba(0,210,255,0.15); border-color: rgba(0,210,255,0.3); color: #00D2FF; }
+    .best-tag { background: rgba(0,210,255,0.15); border: 1px solid rgba(0,210,255,0.3); color: #00D2FF; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 100px; margin-left: 7px; vertical-align: middle; }
+    .live-tag { background: rgba(0,255,100,0.1); border: 1px solid rgba(0,255,100,0.2); color: #00ff88; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; margin-left: 6px; vertical-align: middle; }
+    .disclaimer { text-align: center; margin: 18px 0 36px; color: rgba(255,255,255,0.18); font-size: 11px; }
+    footer { text-align: center; padding: 36px 0; color: rgba(255,255,255,0.18); font-size: 12px; border-top: 1px solid rgba(255,255,255,0.04); margin-top: 20px; }
+    .hidden { display: none !important; }
+    @media (max-width: 580px) {
+      .form-row, .form-row-3 { grid-template-columns: 1fr; }
+      .rate-card { flex-wrap: wrap; }
+      .res-hdr { flex-direction: column; align-items: flex-start; }
+      .del-badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="hero-bg"></div>
+<div class="grid-bg"></div>
+
+<div class="wrap">
+  <nav>
+    <div class="logo">already<span>shipped</span>.com</div>
+    <div class="badge">Live Rates</div>
+  </nav>
+
+  <!-- FORM -->
+  <div id="form-section">
+    <div class="hero">
+      <h1>Compare Every<br><em>Shipping Rate</em><br>Instantly</h1>
+      <p>Real live rates from USPS, UPS, FedEx &amp; DHL. Find the cheapest option in seconds.</p>
+    </div>
+    <div class="form-card">
+      <div class="sec-label">📍 From Address</div>
+      <div class="form-row">
+        <div class="field"><label>City</label><input id="fromCity" type="text" placeholder="New York" /></div>
+        <div class="field"><label>State</label><select id="fromState"><option value="">Select state</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>ZIP Code *</label><input id="fromZip" type="text" placeholder="10001" maxlength="5" /></div>
+        <div class="field"><label>Country</label><input type="text" value="United States" readonly /></div>
+      </div>
+
+      <div class="sec-label">📦 To Address</div>
+      <div class="form-row">
+        <div class="field"><label>City</label><input id="toCity" type="text" placeholder="Los Angeles" /></div>
+        <div class="field"><label>State</label><select id="toState"><option value="">Select state</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>ZIP Code *</label><input id="toZip" type="text" placeholder="90001" maxlength="5" /></div>
+        <div class="field"><label>Country</label><input type="text" value="United States" readonly /></div>
+      </div>
+
+      <div class="sec-label">📋 Package Details</div>
+      <div class="field">
+        <label>Package Type</label>
+        <div class="pkg-toggle">
+          <button class="pkg-btn active" id="btn-box" onclick="setPkg('box')">📦 Box / Parcel</button>
+          <button class="pkg-btn" id="btn-doc" onclick="setPkg('document')">📄 Documents</button>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:14px">
+        <div class="field"><label>Weight (lbs) *</label><input id="weight" type="number" placeholder="2.5" min="0.1" step="0.1" /></div>
+        <div class="field"><label>Declared Value ($)</label><input id="declaredValue" type="number" placeholder="50.00" /></div>
+      </div>
+      <div id="dimensions" class="form-row-3">
+        <div class="field"><label>Length (in)</label><input id="length" type="number" placeholder="12" /></div>
+        <div class="field"><label>Width (in)</label><input id="width" type="number" placeholder="8" /></div>
+        <div class="field"><label>Height (in)</label><input id="height" type="number" placeholder="6" /></div>
+      </div>
+      <button class="cmp-btn" onclick="compareRates()">🔍 Compare Live Rates →</button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading-section" class="hidden">
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <p style="font-size:17px;font-weight:700;margin-bottom:8px">Fetching live rates...</p>
+      <p style="color:rgba(255,255,255,0.4);font-size:14px">Checking all carriers in real time</p>
+      <div class="loading-carriers">
+        <div class="loading-carrier" style="animation-delay:0s">USPS</div>
+        <div class="loading-carrier" style="animation-delay:0.2s">UPS</div>
+        <div class="loading-carrier" style="animation-delay:0.4s">FedEx</div>
+        <div class="loading-carrier" style="animation-delay:0.6s">DHL</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-section" class="hidden">
+    <div class="error-box">
+      <p style="font-size:16px;font-weight:700;margin-bottom:8px">⚠️ Could not fetch rates</p>
+      <p id="error-msg" style="font-size:13px;opacity:0.8;margin-bottom:16px"></p>
+      <button class="back-btn" onclick="show('form-section')">← Try Again</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section" class="hidden">
+    <div class="res-hdr">
+      <div class="res-title">
+        <h2 id="results-count">🎯 Rates Found</h2>
+        <p id="results-route">Sorted by lowest price</p>
+      </div>
+      <button class="back-btn" onclick="show('form-section')">← New Search</button>
+    </div>
+    <div class="sum-bar" id="sum-bar"></div>
+    <div class="best-banner">
+      <div>
+        <div class="best-label">⚡ Best Deal</div>
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <span class="best-price" id="best-price">$0.00</span>
+          <span style="color:rgba(255,255,255,0.5);font-size:14px" id="best-detail"></span>
+        </div>
+        <div style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:4px" id="best-savings"></div>
+      </div>
+      <button class="book-btn">Book This Rate →</button>
+    </div>
+    <div class="filters">
+      <button class="f-btn active" onclick="setFilter('All',this)">All</button>
+      <button class="f-btn" onclick="setFilter('USPS',this)">USPS</button>
+      <button class="f-btn" onclick="setFilter('UPS',this)">UPS</button>
+      <button class="f-btn" onclick="setFilter('FedEx',this)">FedEx</button>
+      <button class="f-btn" onclick="setFilter('DHL',this)">DHL</button>
+      <label class="tog"><input type="checkbox" id="top3" onchange="renderRates()"> Top 3 only</label>
+    </div>
+    <div id="rates-list"></div>
+    <div class="disclaimer">✅ Live rates powered by EasyPost · Prices confirmed at checkout</div>
+  </div>
+
+  <footer>© 2026 alreadyshipped.com · Real-time rates from all major US carriers</footer>
+</div>
+
+<script>
+  // States dropdown
+  const states = ["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+  ["fromState","toState"].forEach(id => {
+    const sel = document.getElementById(id);
+    states.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+  });
+
+  const carrierEmoji = { USPS:"📮", UPS:"🟤", FedEx:"✈️", DHL:"🌍" };
+  let allRates = [];
+  let currentFilter = "All";
+  let packageType = "box";
+
+  function show(id) {
+    ["form-section","loading-section","error-section","results-section"]
+      .forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
+  }
+
+  function setPkg(type) {
+    packageType = type;
+    document.getElementById('btn-box').classList.toggle('active', type==='box');
+    document.getElementById('btn-doc').classList.toggle('active', type==='document');
+    document.getElementById('dimensions').style.display = type==='box' ? 'grid' : 'none';
+  }
+
+  async function compareRates() {
+    const fromZip = document.getElementById('fromZip').value.trim();
+    const toZip   = document.getElementById('toZip').value.trim();
+    const weight  = document.getElementById('weight').value;
+
+    if (!fromZip || !toZip || !weight) {
+      alert('Please fill in From ZIP, To ZIP and Weight.');
+      return;
+    }
+
+    show("loading-section");
+
+    try {
+      // Calls our Vercel serverless function — API key is hidden server-side
+      const resp = await fetch("/api/get-rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromZip,
+          fromCity:  document.getElementById('fromCity').value,
+          fromState: document.getElementById('fromState').value,
+          toZip,
+          toCity:    document.getElementById('toCity').value,
+          toState:   document.getElementById('toState').value,
+          weight,
+          length: document.getElementById('length').value  || 6,
+          width:  document.getElementById('width').value   || 6,
+          height: document.getElementById('height').value  || 6,
+          packageType
+        })
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || "Could not fetch rates");
+
+      allRates = data.rates;
+      if (allRates.length === 0) throw new Error("No rates returned — check your EasyPost account is activated.");
+
+      // Fill summary bar
+      const fromCity = document.getElementById('fromCity').value || fromZip;
+      const toCity   = document.getElementById('toCity').value   || toZip;
+      document.getElementById('sum-bar').innerHTML = `
+        <div class="sum-item"><span class="sum-key">From</span><span class="sum-val">${fromCity}</span></div>
+        <div class="sum-item"><span class="sum-key">To</span><span class="sum-val">${toCity}</span></div>
+        <div class="sum-item"><span class="sum-key">Package</span><span class="sum-val">${packageType==='box'?'📦 Box':'📄 Doc'}</span></div>
+        <div class="sum-item"><span class="sum-key">Weight</span><span class="sum-val">${weight} lbs</span></div>`;
+
+      // Best deal banner
+      const best  = allRates[0];
+      const worst = allRates[allRates.length - 1];
+      document.getElementById('best-price').textContent   = '$' + best.price.toFixed(2);
+      document.getElementById('best-detail').textContent  = best.carrier + ' · ' + best.service;
+      document.getElementById('best-savings').textContent = '💰 Save $' + (worst.price - best.price).toFixed(2) + ' vs most expensive';
+      document.getElementById('results-count').textContent = '🎯 ' + allRates.length + ' Live Rates Found';
+      document.getElementById('results-route').textContent = 'Real prices · ' + fromZip + ' → ' + toZip;
+
+      currentFilter = 'All';
+      document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.f-btn').classList.add('active');
+
+      show("results-section");
+      renderRates();
+
+    } catch(err) {
+      document.getElementById('error-msg').textContent = err.message;
+      show("error-section");
+    }
+  }
+
+  function renderRates() {
+    const top3 = document.getElementById('top3').checked;
+    let list = allRates.filter(r => currentFilter==='All' || r.carrier===currentFilter);
+    if (top3) list = list.slice(0, 3);
+    document.getElementById('rates-list').innerHTML = list.map((r, i) => `
+      <div class="rate-card ${i===0 && currentFilter==='All' ? 'best' : ''}" style="animation-delay:${i*0.04}s">
+        <div class="c-badge">${carrierEmoji[r.carrier] || '📦'}</div>
+        <div class="c-info">
+          <div class="c-name">
+            ${r.carrier}
+            ${i===0 && currentFilter==='All' ? '<span class="best-tag">Cheapest</span>' : ''}
+            <span class="live-tag">LIVE</span>
+          </div>
+          <div class="c-svc">${r.service}</div>
+        </div>
+        <div class="del-badge">🕒 ${r.delivery}</div>
+        <div class="r-price">$${r.price.toFixed(2)}</div>
+        <button class="sel-btn">Select →</button>
+      </div>`).join('');
+  }
+
+  function setFilter(carrier, btn) {
+    currentFilter = carrier;
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderRates();
+  }
+</script>
+</body>
+</html>
